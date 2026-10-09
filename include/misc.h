@@ -20,13 +20,9 @@
 
 #include <stdio.h>
 #include <sys/types.h>
+#include "include/visibility-hidden.h"
 
-/* Mark library internal functions as hidden */
-#if defined(HAVE_VISIBILITY_ATTRIBUTE)
-# define hidden __attribute__((visibility("hidden")))
-#else
-# define hidden /* hidden */
-#endif
+#define unused __attribute__ ((unused))
 
 hidden int __acl_high_water_alloc(void **buf, size_t *bufsize, size_t newsize);
 

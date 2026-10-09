@@ -2,8 +2,13 @@ noinst_HEADERS += \
 	include/libacl.h \
 	include/acl.h \
 	include/acl_ea.h \
+	include/fchmodat_compat.h \
 	include/misc.h \
-	include/walk_tree.h
+	include/openat2.h \
+	include/visibility-hidden.h \
+	include/walk_tree.h \
+	include/xattrat.h \
+	include/xattrat_compat.h
 
 SUBST_INSTALL_HEADER = \
 	subst_install_header() { \

@@ -1,7 +1,7 @@
 /*
   File: walk_tree.h
 
-  Copyright (C) 2007 Andreas Gruenbacher <a.gruenbacher@computer.org>
+  Copyright (C) 2007-2026 Andreas Gruenbacher <a.gruenbacher@computer.org>
 
   This library is free software; you can redistribute it and/or
   modify it under the terms of the GNU Lesser General Public
@@ -20,23 +20,21 @@
 #ifndef __WALK_TREE_H
 #define __WALK_TREE_H
 
-#define WALK_TREE_RECURSIVE		0x01
-#define WALK_TREE_PHYSICAL		0x02
-#define WALK_TREE_LOGICAL		0x04
-#define WALK_TREE_DEREFERENCE		0x08
-#define WALK_TREE_DEREFERENCE_TOPLEVEL	0x10
-#define WALK_TREE_ONE_FILESYSTEM	0x20
+enum walk_flags {
+	WALK_TREE_RECURSIVE = 0x01,
+	WALK_TREE_PHYSICAL = 0x02,
+	WALK_TREE_LOGICAL = 0x04,
+	WALK_TREE_ONE_FILESYSTEM = 0x08,
 
-#define WALK_TREE_TOPLEVEL	0x100
-#define WALK_TREE_SYMLINK	0x200
-#define WALK_TREE_FAILED	0x400
+	WALK_TREE_TOPLEVEL = 0x100,
+	WALK_TREE_FAILED = 0x200,
+};
 
 struct stat;
 
-#define walk_tree __acl_walk_tree
-
-extern int walk_tree(const char *path, int walk_flags, unsigned int num,
-		     int (*func)(const char *, const struct stat *, int,
-				 void *), void *arg);
+extern int walk_tree(const char *pathname, enum walk_flags walk_flags,
+		     int (*func)(int, const char *, const char *,
+				 unsigned char, enum walk_flags, void *),
+		     void *arg);
 
 #endif

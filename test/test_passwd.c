@@ -1,5 +1,4 @@
 #include "config.h"
-#include <assert.h>
 #include <sys/types.h>
 #include <stdio.h>
 #include <string.h>
@@ -8,9 +7,6 @@
 #include <libgen.h>
 #include <limits.h>
 #include <pwd.h>
-
-#define TEST_PASSWD "test/test.passwd"
-static char pwfile[] = BASEDIR "/" TEST_PASSWD;
 
 #define ALIGN_MASK(x, mask)    (((x) + (mask)) & ~(mask))
 #define ALIGN(x, a)            ALIGN_MASK(x, (typeof(x))(a) - 1)
@@ -71,11 +67,21 @@ static int test_getpw_match(struct passwd *pwd, char *buf, size_t buflen,
 			    int (*match)(const struct passwd *, const void *),
 			    const void *data)
 {
+	static char *pwfile;
 	FILE *file;
 	struct passwd *_result;
 
 	*result = NULL;
 
+	if (!pwfile) {
+		const char *testlookup = getenv("TESTLOOKUP");
+		if (!testlookup)
+			testlookup = "/etc";
+		if (asprintf(&pwfile, "%s/passwd", testlookup) == -1) {
+			fprintf(stderr, "%s: %s\n", __func__, strerror(errno));
+			return -1;
+		}
+	}
 	file = fopen(pwfile, "r");
 	if (!file) {
 		fprintf(stderr, "Failed to open %s\n", pwfile);
@@ -111,13 +117,17 @@ int getpwnam_r(const char *name, struct passwd *pwd, char *buf, size_t buflen,
 {
 	static size_t last_buflen = -1;
 
-	assert(last_buflen == -1 || buflen > last_buflen);
+	if (last_buflen != (size_t)-1 && buflen <= last_buflen) {
+		fprintf(stderr, "%s: buflen %zu not increasing from %zu",
+			__func__, buflen, last_buflen);
+		abort();
+	}
 	if (buflen < 170000) {
 		last_buflen = buflen;
 		*result = NULL;
 		return ERANGE;
 	}
-	last_buflen =- 1;
+	last_buflen = -1;
 
 	return test_getpw_match(pwd, buf, buflen, result, match_name, name);
 }
@@ -129,7 +139,7 @@ struct passwd *getpwnam(const char *name)
 	static struct passwd pwd;
 	struct passwd *result;
 
-	(void) getpwnam_r(name, &pwd, buf, sizeof(buf), &result);
+	(void) test_getpw_match(&pwd, buf, sizeof(buf), &result, match_name, name);
 	return result;
 }
 

@@ -1,5 +1,4 @@
 #include "config.h"
-#include <assert.h>
 #include <sys/types.h>
 #include <stdio.h>
 #include <string.h>
@@ -8,9 +7,6 @@
 #include <libgen.h>
 #include <limits.h>
 #include <grp.h>
-
-#define TEST_GROUP "test/test.group"
-static char grfile[] = BASEDIR "/" TEST_GROUP;
 
 #define ALIGN_MASK(x, mask)    (((x) + (mask)) & ~(mask))
 #define ALIGN(x, a)            ALIGN_MASK(x, (typeof(x))(a) - 1)
@@ -77,8 +73,19 @@ static int test_getgr_match(struct group *grp, char *buf, size_t buflen,
 			    int (*match)(const struct group *, const void *),
 			    const void *data)
 {
+	static char *grfile;
 	FILE *file;
 	struct group *_result;
+
+	if (!grfile) {
+		const char *testlookup = getenv("TESTLOOKUP");
+		if (!testlookup)
+			testlookup = "/etc";
+		if (asprintf(&grfile, "%s/group", testlookup) == -1) {
+			fprintf(stderr, "%s: %s\n", __func__, strerror(errno));
+			return -1;
+		}
+	}
 
 	*result = NULL;
 
@@ -118,7 +125,11 @@ int getgrnam_r(const char *name, struct group *grp, char *buf, size_t buflen,
 {
 	static size_t last_buflen = -1;
 
-	assert(last_buflen == -1 || buflen > last_buflen);
+	if (last_buflen != (size_t)-1 && buflen <= last_buflen) {
+		fprintf(stderr, "%s: buflen %zu not increasing from %zu",
+			__func__, buflen, last_buflen);
+		abort();
+	}
 	if (buflen < 170000) {
 		last_buflen = buflen;
 		*result = NULL;
@@ -136,7 +147,7 @@ struct group *getgrnam(const char *name)
 	static struct group grp;
 	struct group *result;
 
-	(void) getgrnam_r(name, &grp, buf, sizeof(buf), &result);
+	(void) test_getgr_match(&grp, buf, sizeof buf, &result, match_name, name);
 	return result;
 }
 
